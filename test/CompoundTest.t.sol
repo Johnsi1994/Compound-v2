@@ -12,6 +12,8 @@ import "../src/compound/CErc20Immutable.sol";
 contract CompoundTest is Test {
     MyERC20 public tokenA;
     CErc20 public cTokenA;
+    MyERC20 public tokenB;
+    CErc20 public cTokenB;
     Comptroller public comptroller;
     SimplePriceOracle public priceOracle;
     WhitePaperInterestRateModel public interestRateModel;
@@ -19,8 +21,6 @@ contract CompoundTest is Test {
     uint private constant MINT_AMOUNT = 100;
 
     function setUp() public {
-        tokenA = new MyERC20("TokenA", "TKA", 1e18);
-
         comptroller = new Comptroller();
         priceOracle = new SimplePriceOracle();
         interestRateModel = new WhitePaperInterestRateModel(0, 0);
@@ -28,6 +28,37 @@ contract CompoundTest is Test {
         // set simplePriceOracle as price oracle
         comptroller._setPriceOracle(priceOracle);
 
+
+    }
+
+    function test_assert_mint_success() public {
+        createTokenA();
+        mint();
+
+        // cErc20's erc20A increase
+        assertEq(tokenA.balanceOf(address(cTokenA)), MINT_AMOUNT);
+
+        // owner's cErc20A increase
+        assertEq(cTokenA.balanceOf(address(this)), MINT_AMOUNT);
+    }
+
+    function test_assert_redeem_success() public {
+        createTokenA();
+        redeem();
+
+        // cErc20's erc20A is 0
+        assertEq(tokenA.balanceOf(address(cTokenA)), 0);
+
+        // owner's cErc20A is 0
+        assertEq(cTokenA.balanceOf(address(this)), 0);
+    }
+
+    function test_assert_borrow_success() public {
+
+    }
+
+    function createTokenA() private {
+        tokenA = new MyERC20("TokenA", "TKA", 1e18);
         cTokenA = new CErc20Immutable(
             address(tokenA),
             comptroller,
@@ -43,24 +74,32 @@ contract CompoundTest is Test {
         comptroller._supportMarket(cTokenA);
     }
 
-    function test_assert_mint_success() public {
-        mint();
+    function createTokenB() private {
+        tokenB = new MyERC20("TokenB", "TKB", 1e18);
+        cTokenB = new CErc20Immutable(
+            address(tokenB),
+            comptroller,
+            interestRateModel,
+            1e18,
+            "cTokenB",
+            "cTKB",
+            18,
+            payable(address(this))
+        );
 
-        // cErc20's erc20A increase
-        assertEq(tokenA.balanceOf(address(cTokenA)), MINT_AMOUNT);
-
-        // owner's cErc20A increase
-        assertEq(cTokenA.balanceOf(address(this)), MINT_AMOUNT);
+        // add cTokenB to supportMarket
+        comptroller._supportMarket(cTokenB);
     }
 
-    function test_assert_redeem_success() public {
-        redeem();
-
-        // cErc20's erc20A is 0
-        assertEq(tokenA.balanceOf(address(cTokenA)), 0);
-
-        // owner's cErc20A is 0
-        assertEq(cTokenA.balanceOf(address(this)), 0);
+    function prepare() private {
+        // set tokenA's price as 1$
+        priceOracle.setUnderlyingPrice(cTokenA, 1e18);
+        // set tokenB's price as 100$
+        priceOracle.setUnderlyingPrice(cTokenB, 100 * 1e18);
+        // set tokenB's collateral factor as 50%
+        comptroller._setCollateralFactor(cTokenB, 0.5 * 1e18);
+        // set cTokenB as collateral
+        comptroller.enterMarkets([cTokenB]);
     }
 
     function mint() private {
