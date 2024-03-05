@@ -99,7 +99,9 @@ contract CompoundTest is Test {
         // set tokenB's collateral factor as 50%
         comptroller._setCollateralFactor(cTokenB, 0.5 * 1e18);
         // set cTokenB as collateral
-        comptroller.enterMarkets([cTokenB]);
+        address[] memory cTokens = new address[](1);
+        cTokens[0] = address(cTokenB);
+        comptroller.enterMarkets(cTokens);
     }
 
     function mint() private {
