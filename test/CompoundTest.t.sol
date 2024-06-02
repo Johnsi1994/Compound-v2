@@ -50,6 +50,7 @@ contract CompoundTest is Test {
 
     function test_assert_redeem_success() public {
         mintCToken(tokenA, cTokenA, MINT_AMOUNT);
+
         redeem(cTokenA, MINT_AMOUNT);
 
         // cErc20's erc20A is 0
@@ -216,7 +217,7 @@ contract CompoundTest is Test {
         cTokenA.liquidateBorrow(address(this), repayAmount, cTokenB);
         vm.stopPrank();
 
-        // After liquidate User2's balance decrease repayAmount and cTokenA's balance increase repayAmount
+        // After liquidate, User2's balance decrease repayAmount and cTokenA's balance increase repayAmount
         assertEq(tokenA.balanceOf(address(USER2)), user2Balance - repayAmount);
         assertEq(tokenA.balanceOf(address(cTokenA)), cTokenABalance + repayAmount);
     }
@@ -239,13 +240,15 @@ contract CompoundTest is Test {
         erc20.approve(address(cErc20), amount);
 
         // mint cErc20
-        // there are 2 steps in this mint action: do transferFrom in erc20 first, and then mint cErc20
+        // there are 2 steps in this mint action:
+        // do transferFrom in erc20 first, and then mint cErc20
         cErc20.mint(amount);
     }
 
     function redeem(CErc20 cErc20, uint256 amount) private {
         // do redeem
-        // there are 2 steps in this redeem action: to decrease cErc20 first, then do transfer in erc20
+        // there are 2 steps in this redeem action:
+        // to decrease cErc20 first, then do transfer in erc20
         cErc20.redeem(amount);
     }
 
